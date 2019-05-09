@@ -33,9 +33,8 @@ class Timer:
                  datetime_color='LIGHTMAGENTA_EX'):
         """
         Args:
-            func (callable or None): Function to time.
+            display_name (str): String to be displayed to identify the timed snippet of code.
             datetime_format (str or None, optional): Datetime format used to display the date and time. The format follows the template of the 'datetime' package. If None, no date or time will be displayed.
-            display_func_name (bool): Whether or not the function name should be displayed.
             main_color (str): Color in which the main text will be displayed. Choices are those from the package colorama.
             exception_exit_color (str): Color in which the exception text will be displayed. Choices are those from the package colorama.
             name_color (str): Color in which the function name will be displayed. Choices are those from the package colorama.
@@ -43,48 +42,29 @@ class Timer:
             datetime_color (str): Color in which the date and time of day will be displayed. Choices are those from the package colorama.
 
         Supported colors:
-            BLACK, WHITE, RED, BLUE, GREEN, CYAN, MAGENTA, YELLOW, LIGHTRED_EX, BLIGHTLUE_EX, GRLIGHTEEN_EX, CLIGHTYAN_EX, MAGELIGHTNTA_EX, YELLIGHTLOW_EX,
+            BLACK, WHITE, RED, BLUE, GREEN, CYAN, MAGENTA, YELLOW, LIGHTRED_EX, BLIGHTLUE_EX, GRLIGHTEEN_EX, CLIGHTYAN_EX, MAGELIGHTNTA_EX, YELLIGHTLOW_EX
 
         Example 1:
-            >>> from quadboost.utils import timed
-            >>> @timed
-            ... def foo():
-            ...     print('foo!')
+            >>> from graal_utils import Timer
+            >>> with Timer():
+            ...     print('graal')
             ...
-            >>> foo()
-            Execution of 'foo' started on 2018-09-10 20h25m06s.
+        Execution started on 2019-05-09 13h48m23s.
 
-            foo!
+        graal
 
-            Execution of 'foo' completed in 0.00 seconds on 2018-09-10 20h25m06s.
+        Execution completed in 0.00 seconds on 2019-05-09 13h48m23s.
 
         Example 2:
-            >>> @timed(datetime_format='%Hh%Mm%Ss', display_func_name=False, main_color='WHITE')
-            ... def bar():
-            ...     print('bar!')
-            ...     raise RuntimeError
+            >>> from graal_utils import Timer
+            >>> with Timer('python', time_color='MAGENTA'):
+            ...     print('Python')
             ...
-            >>> try:
-            ...     bar()
-            ... except RuntimeError: pass
-            Execution started on 20h25m06s.
+        Execution of 'python' started on 2019-05-09 13h48m23s.
 
-            bar!
+        Python
 
-            Execution terminated after 0.00 seconds on 20h25m06s.
-
-        Example 3:
-            >>> class Spam:
-            ...     @timed
-            ...     def spam(self):
-            ...         print('egg!')
-
-            >>> Spam().spam()
-            Execution of 'spam' started on 2018-10-02 18h33m14s.
-
-            egg!
-
-            Execution of 'spam' completed in 0.00 seconds on 2018-10-02 18h33m14s.
+        Execution of 'python' completed in 0.00 seconds on 2019-05-09 13h48m23s.
         """
         self.display_name = display_name
         self.start_time = None
@@ -141,12 +121,54 @@ class Timer:
             + Style.RESET_ALL)
 
 
-@functools.wraps(Timer.__init__)
 def timed(func=None, *, display_func_name=True, display_name=None, **Timer_kwargs):
     """
-    See Timer __init__ documentation for arguments and usage examples.
     Args:
-        display_func_name (bool): If true, the name of the function will be displayed. Else
+        func (function): Function or method to be wrapped.
+        display_func_name (bool): Whether the name of the function given by __name__ will be displayed.
+        display_name (str): Alternative name to display instead of func.__name__.
+    See Timer __init__ documentation for arguments and usage examples.
+
+    Example 1:
+        >>> from graal_utils import timed
+        >>> @timed
+        ... def foo():
+        ...     print('foo!')
+        ...
+        >>> foo()
+        Execution of 'foo' started on 2018-09-10 20h25m06s.
+
+        foo!
+
+        Execution of 'foo' completed in 0.00 seconds on 2018-09-10 20h25m06s.
+
+    Example 2:
+        >>> @timed(datetime_format='%Hh%Mm%Ss', display_func_name=False, main_color='WHITE')
+        ... def bar():
+        ...     print('bar!')
+        ...     raise RuntimeError
+        ...
+        >>> try:
+        ...     bar()
+        ... except RuntimeError: pass
+        Execution started on 20h25m06s.
+
+        bar!
+
+        Execution terminated after 0.00 seconds on 20h25m06s.
+
+    Example 3:
+        >>> class Spam:
+        ...     @timed
+        ...     def spam(self):
+        ...         print('egg!')
+
+        >>> Spam().spam()
+        Execution of 'spam' started on 2018-10-02 18h33m14s.
+
+        egg!
+
+        Execution of 'spam' completed in 0.00 seconds on 2018-10-02 18h33m14s.
     """
     if func is None:
         def missing_func_timed(new_func):
@@ -188,8 +210,7 @@ if __name__ == '__main__':
     Spam().spam()
 
     with Timer():
-        sleep(.3)
-        print('Dsd')
-    with Timer('test', time_color='MAGENTA'):
-        sleep(.3)
-        print('Dsd')
+        print('graal')
+
+    with Timer('python', time_color='MAGENTA'):
+        print('Python')
