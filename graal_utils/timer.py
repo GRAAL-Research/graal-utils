@@ -25,6 +25,7 @@ __date__ = 'May 28th, 2019'
 class Timer:
     def __init__(self, display_name=None,
                  datetime_format='%Y-%m-%d %Hh%Mm%Ss',
+                 elapsed_time_format='short',
                  main_color='LIGHTYELLOW_EX',
                  exception_exit_color='LIGHTRED_EX',
                  name_color='LIGHTBLUE_EX',
@@ -34,6 +35,7 @@ class Timer:
         Args:
             display_name (str): String to be displayed to identify the timed snippet of code.
             datetime_format (str or None, optional): Datetime format used to display the date and time. The format follows the template of the 'datetime' package. If None, no date or time will be displayed.
+            elapsed_time_format (either 'short' or 'long', optional): Format used to display the elapsed time. If 'long', whole words will be used. If 'short', only the first letters will be displayed.
             main_color (str): Color in which the main text will be displayed. Choices are those from the package colorama.
             exception_exit_color (str): Color in which the exception text will be displayed. Choices are those from the package colorama.
             name_color (str): Color in which the function name will be displayed. Choices are those from the package colorama.
@@ -68,6 +70,7 @@ class Timer:
         self.display_name = display_name
         self.start_time = None
         self.datetime_format = datetime_format
+        self.elapsed_time_format = elapsed_time_format
 
         self.main_color = getattr(Fore, main_color)
         self.exception_exit_color = getattr(Fore, exception_exit_color)
@@ -97,24 +100,25 @@ class Timer:
         if self.datetime_format is None:
             return ''
         else:
-            return ' on ' + self.datetime_color + dt.now().strftime(self.datetime_format) + self.main_color
+            return 'on ' + self.datetime_color + dt.now().strftime(self.datetime_format) + self.main_color
 
     @property
     def elapsed_time(self):
-        return self.format_elapsed_time(time() - self.start_time)
+        format_elapsed_time = self.short_format_elapsed_time
+        if self.elapsed_time_format == 'long':
+            format_elapsed_time = self.long_format_elapsed_time
+        return format_elapsed_time(time() - self.start_time)
 
-    def format_elapsed_time(self, seconds):
-        periods = [
-            ('year',        60*60*24*365),
-            ('month',       60*60*24*30),
-            ('day',         60*60*24),
-            ('hour',        60*60),
-            ('minute',      60)
-        ]
+    def long_format_elapsed_time(self, seconds):
+        periods = {
+            'day':60*60*24,
+            'hour':60*60,
+            'minute':60
+        }
 
         pluralize = lambda period_value: 's' if period_value > 1 else ''
         time_strings = []
-        for period_name, period_seconds in periods:
+        for period_name, period_seconds in periods.items():
             if seconds >= period_seconds:
                 period_value, seconds = divmod(seconds, period_seconds)
                 has_s = pluralize(period_value)
@@ -123,12 +127,29 @@ class Timer:
         seconds_has_s = pluralize(seconds)
         time_strings.append(f"{seconds:.2f} second{seconds_has_s}")
 
-        return self.time_color + ", ".join(time_strings)
+        return self.time_color + " ".join(time_strings)
+
+    def short_format_elapsed_time(self, seconds):
+        periods = {
+            'd':60*60*24,
+            'h':60*60,
+            'm':60
+        }
+
+        time_strings = []
+        for period_name, period_seconds in periods.items():
+            if seconds >= period_seconds:
+                period_value, seconds = divmod(seconds, period_seconds)
+                time_strings.append(f"{int(period_value)}{period_name}")
+
+        time_strings.append(f"{seconds:.2f}s")
+
+        return self.time_color + " ".join(time_strings)
 
     def _start_timer(self):
         self.start_time = time()
         print(self.main_color
-            + f'Execution {self.func_name}started{self.datetime}.\n'
+            + f'Execution {self.func_name}started {self.datetime}.\n'
             + Style.RESET_ALL)
 
     def _exception_exit_end_timer(self):
@@ -236,17 +257,6 @@ if __name__ == '__main__':
     with Timer('python', time_color='MAGENTA'):
         print('Python')
 
-    with Timer('python', time_color='MAGENTA'):
-        print("sleep 2.5 seconds")
-        sleep(2.5)
-
-    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60*60*24*365))
-    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60*60*24*30))
-    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60*60*24))
-    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60*60))
-    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60))
-    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60*60*24*365 + 60*60*24*30 + 60*60*24 + 60*60 + 60 + 1.5))
-    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60.5))
-    print(Timer('python', time_color='MAGENTA').format_elapsed_time(1.5))
-    print(Timer('python', time_color='MAGENTA').format_elapsed_time(1))
-    print(Timer('python', time_color='MAGENTA').format_elapsed_time(0.5))
+    with Timer('python', elapsed_time_format='long', time_color='CYAN'):
+        print("sleep 1.5 seconds")
+        sleep(1.5)
