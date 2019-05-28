@@ -18,9 +18,8 @@ except ModuleNotFoundError:
     Style = EmptyStringAttrClass()
 
 
-__author__ = 'Jean-Samuel Leboeuf'
-__credit__ = 'Frédérik Paradis'
-__date__ = 'May 9th, 2019'
+__author__ = 'Jean-Samuel Leboeuf, Frédérik Paradis'
+__date__ = 'May 28th, 2019'
 
 
 class Timer:
@@ -102,7 +101,29 @@ class Timer:
 
     @property
     def elapsed_time(self):
-        return self.time_color + f'{time()-self.start_time:.2f}'
+        return self.format_elapsed_time(time() - self.start_time)
+
+    def format_elapsed_time(self, seconds):
+        periods = [
+            ('year',        60*60*24*365),
+            ('month',       60*60*24*30),
+            ('day',         60*60*24),
+            ('hour',        60*60),
+            ('minute',      60)
+        ]
+
+        pluralize = lambda period_value: 's' if period_value > 1 else ''
+        time_strings = []
+        for period_name, period_seconds in periods:
+            if seconds >= period_seconds:
+                period_value, seconds = divmod(seconds, period_seconds)
+                has_s = pluralize(period_value)
+                time_strings.append(f"{int(period_value)} {period_name + has_s}")
+
+        seconds_has_s = pluralize(seconds)
+        time_strings.append(f"{seconds:.2f} second{seconds_has_s}")
+
+        return self.time_color + ", ".join(time_strings)
 
     def _start_timer(self):
         self.start_time = time()
@@ -112,12 +133,12 @@ class Timer:
 
     def _exception_exit_end_timer(self):
         print(self.exception_exit_color
-            + f'\nExecution terminated after {self.elapsed_time}{self.exception_exit_color} seconds{self.datetime}{self.exception_exit_color}.\n'
+            + f'\nExecution terminated after {self.elapsed_time}{self.exception_exit_color} {self.datetime}{self.exception_exit_color}.\n'
             + Style.RESET_ALL)
 
     def _normal_exit_end_timer(self):
         print(self.main_color
-            + f'\nExecution {self.func_name}completed in {self.elapsed_time}{self.main_color} seconds{self.datetime}.\n'
+            + f'\nExecution {self.func_name}completed in {self.elapsed_time}{self.main_color} {self.datetime}.\n'
             + Style.RESET_ALL)
 
 
@@ -214,3 +235,18 @@ if __name__ == '__main__':
 
     with Timer('python', time_color='MAGENTA'):
         print('Python')
+
+    with Timer('python', time_color='MAGENTA'):
+        print("sleep 2.5 seconds")
+        sleep(2.5)
+
+    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60*60*24*365))
+    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60*60*24*30))
+    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60*60*24))
+    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60*60))
+    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60))
+    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60*60*24*365 + 60*60*24*30 + 60*60*24 + 60*60 + 60 + 1.5))
+    print(Timer('python', time_color='MAGENTA').format_elapsed_time(60.5))
+    print(Timer('python', time_color='MAGENTA').format_elapsed_time(1.5))
+    print(Timer('python', time_color='MAGENTA').format_elapsed_time(1))
+    print(Timer('python', time_color='MAGENTA').format_elapsed_time(0.5))
