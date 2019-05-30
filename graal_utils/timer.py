@@ -104,45 +104,45 @@ class Timer:
 
     @property
     def elapsed_time(self):
-        format_elapsed_time = self.short_format_elapsed_time
-        if self.elapsed_time_format == 'long':
-            format_elapsed_time = self.long_format_elapsed_time
-        return format_elapsed_time(time() - self.start_time)
+        return self.format_elapsed_time(time() - self.start_time)
 
-    def long_format_elapsed_time(self, seconds):
+    def format_long_time(self, seconds, period):
         periods = {
-            'day':60*60*24,
-            'hour':60*60,
-            'minute':60
+            'd': 'day',
+            'h': 'hour',
+            'm': 'minute',
+            's': 'second'
         }
 
         pluralize = lambda period_value: 's' if period_value > 1 else ''
-        time_strings = []
-        for period_name, period_seconds in periods.items():
-            if seconds >= period_seconds:
-                period_value, seconds = divmod(seconds, period_seconds)
-                has_s = pluralize(period_value)
-                time_strings.append(f"{int(period_value)} {period_name + has_s}")
+        format_period_string = periods[period] + pluralize(seconds)
+        if period != 's':
+            return f"{int(seconds)} {format_period_string}"
+        else:
+            return f"{seconds:.2f} {format_period_string}"
 
-        seconds_has_s = pluralize(seconds)
-        time_strings.append(f"{seconds:.2f} second{seconds_has_s}")
+    def format_short_time(self, seconds, period):
+        if period != 's':
+            return f"{int(seconds)}{period}"
+        else:
+            return f"{seconds:.2f}{period}"
 
-        return self.time_color + " ".join(time_strings)
-
-    def short_format_elapsed_time(self, seconds):
+    def format_elapsed_time(self, seconds):
+        is_long = self.elapsed_time_format == 'long'
+        format_time = self.format_long_time if is_long else self.format_short_time
         periods = {
-            'd':60*60*24,
-            'h':60*60,
-            'm':60
+            'd': 60*60*24,
+            'h': 60*60,
+            'm': 60,
         }
 
         time_strings = []
         for period_name, period_seconds in periods.items():
             if seconds >= period_seconds:
                 period_value, seconds = divmod(seconds, period_seconds)
-                time_strings.append(f"{int(period_value)}{period_name}")
+                time_strings.append(format_time(period_value, period_name))
 
-        time_strings.append(f"{seconds:.2f}s")
+        time_strings.append(format_time(seconds, 's'))
 
         return self.time_color + " ".join(time_strings)
 
