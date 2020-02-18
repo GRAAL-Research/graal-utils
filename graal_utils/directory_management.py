@@ -6,5 +6,5 @@ def create_directory_if_doesnt_exists(directory):
         os.makedirs(directory)
 
 
-def directory_exist(directory):
+def directory_exists(directory):
     return os.path.exists(directory)
