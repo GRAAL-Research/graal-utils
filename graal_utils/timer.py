@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 This module aims to provide tools to easily time snippets of codes with color coding.
 """
@@ -13,17 +12,19 @@ try:
 except ModuleNotFoundError:
     # Emulate the Fore and Style class of colorama with a class that as an empty string for every attributes.
     class EmptyStringAttrClass:
-        def __getattr__(self, attr): return ''
+        def __getattr__(self, attr):
+            return ''
+
     Fore = EmptyStringAttrClass()
     Style = EmptyStringAttrClass()
-
 
 __author__ = 'Jean-Samuel Leboeuf, Frédérik Paradis'
 __date__ = 'May 28th, 2019'
 
 
 class Timer:
-    def __init__(self, display_name=None,
+    def __init__(self,
+                 display_name=None,
                  datetime_format='%Y-%m-%d %Hh%Mm%Ss',
                  elapsed_time_format='short',
                  main_color='LIGHTYELLOW_EX',
@@ -69,6 +70,7 @@ class Timer:
         """
         self.display_name = display_name
         self.start_time = None
+        self.elapsed_time = None
         self.datetime_format = datetime_format
         self.elapsed_time_format = elapsed_time_format
 
@@ -83,6 +85,7 @@ class Timer:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        self.elapsed_time = time() - self.start_time
         if exc_type:
             self._exception_exit_end_timer()
         else:
@@ -90,7 +93,7 @@ class Timer:
 
     @property
     def func_name(self):
-        if self.display_name: #self.func.__name__ != 'main':
+        if self.display_name:  #self.func.__name__ != 'main':
             return f"of '{self.name_color}{self.display_name}{self.main_color}' "
         else:
             return ''
@@ -101,10 +104,6 @@ class Timer:
             return ''
         else:
             return 'on ' + self.datetime_color + dt.now().strftime(self.datetime_format) + self.main_color
-
-    @property
-    def elapsed_time(self):
-        return self.format_elapsed_time(time() - self.start_time)
 
     def format_long_time(self, seconds, period):
         periods = {
@@ -131,8 +130,8 @@ class Timer:
         is_long = self.elapsed_time_format == 'long'
         format_time = self.format_long_time if is_long else self.format_short_time
         periods = {
-            'd': 60*60*24,
-            'h': 60*60,
+            'd': 60 * 60 * 24,
+            'h': 60 * 60,
             'm': 60,
         }
 
@@ -148,19 +147,21 @@ class Timer:
 
     def _start_timer(self):
         self.start_time = time()
-        print(self.main_color
-            + f'Execution {self.func_name}started {self.datetime}.\n'
-            + Style.RESET_ALL)
+        print(self.main_color + f'Execution {self.func_name}started {self.datetime}.\n' + Style.RESET_ALL)
 
     def _exception_exit_end_timer(self):
-        print(self.exception_exit_color
-            + f'\nExecution terminated after {self.elapsed_time}{self.exception_exit_color} {self.datetime}{self.exception_exit_color}.\n'
-            + Style.RESET_ALL)
+        print(self.exception_exit_color +
+              '\nExecution terminated after ' +
+              self.format_elapsed_time(self.elapsed_time) +
+              f'{self.exception_exit_color} {self.datetime}{self.exception_exit_color}.\n' +
+              Style.RESET_ALL)
 
     def _normal_exit_end_timer(self):
-        print(self.main_color
-            + f'\nExecution {self.func_name}completed in {self.elapsed_time}{self.main_color} {self.datetime}.\n'
-            + Style.RESET_ALL)
+        print(self.main_color +
+              f'\nExecution {self.func_name}completed in ' +
+              self.format_elapsed_time(self.elapsed_time) +
+              f'{self.main_color} {self.datetime}.\n' +
+              Style.RESET_ALL)
 
 
 def timed(func=None, *, display_func_name=True, display_name=None, **Timer_kwargs):
@@ -213,25 +214,31 @@ def timed(func=None, *, display_func_name=True, display_name=None, **Timer_kwarg
         Execution of 'spam' completed in 0.00 seconds on 2018-10-02 18h33m14s.
     """
     if func is None:
+
         def missing_func_timed(new_func):
             return timed(new_func, **Timer_kwargs)
+
         return missing_func_timed
 
     if (not display_name and display_func_name):
         display_name = func.__name__
+
     @functools.wraps(func)
-    def timed_func(*args, **kwargs): # args[0] is the reference to 'self' if 'func' is a method.
+    def timed_func(*args, **kwargs):  # args[0] is the reference to 'self' if 'func' is a method.
         with Timer(display_name, **Timer_kwargs):
             return func(*args, **kwargs)
+
     return timed_func
 
 
 if __name__ == '__main__':
     from time import sleep
+
     @timed
     def foo():
         sleep(.1)
         print('foo!')
+
     foo()
 
     @timed(datetime_format='%Hh%Mm%Ss', display_func_name=False, main_color='WHITE')
@@ -239,9 +246,11 @@ if __name__ == '__main__':
         sleep(.1)
         print('bar!')
         raise RuntimeError
+
     try:
         bar()
-    except RuntimeError: pass
+    except RuntimeError:
+        pass
 
     class Spam:
         @timed
@@ -257,6 +266,7 @@ if __name__ == '__main__':
     with Timer('python', time_color='MAGENTA'):
         print('Python')
 
-    with Timer('python', elapsed_time_format='long', time_color='CYAN'):
+    with Timer('python', elapsed_time_format='long', time_color='CYAN') as t:
         print("sleep 1.5 seconds")
         sleep(1.5)
+    print(t.elapsed_time)
