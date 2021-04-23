@@ -24,6 +24,11 @@ __date__ = 'May 28th, 2019'
 
 
 class Timer:
+    """
+    This class can be used to time snippets of code inside your code. It prints colored information in the terminal.
+
+    The class can be used as a context manager to time the code inside the 'with' statement, as a decorator of a function or a method to time it at each call, or as an iterator to have the total running time of a for loop as well as the mean time taken per iteration. See the doc of the init method for usage examples.
+    """
     def __init__(self,
                  func_or_name=None,
                  *,
@@ -63,27 +68,105 @@ class Timer:
         Supported colors:
             BLACK, WHITE, RED, BLUE, GREEN, CYAN, MAGENTA, YELLOW, LIGHTRED_EX, BLIGHTLUE_EX, GRLIGHTEEN_EX, CLIGHTYAN_EX, MAGELIGHTNTA_EX, YELLIGHTLOW_EX
 
-        Example 1:
-            >>> from graal_utils import Timer
-            >>> with Timer():
-            ...     print('graal')
-            ...
-        Execution started on 2019-05-09 13h48m23s.
+        The class can be used as a context manager, a decorator or as an iterator.
 
-        graal
+        Examples as a context manager:
+            Example 1:
+                >>> from graal_utils import Timer
+                >>> with Timer():
+                ...     print('graal')
+                ...
+            Execution started on 2019-05-09 13h48m23s.
 
-        Execution completed in 0.00 seconds on 2019-05-09 13h48m23s.
+            graal
 
-        Example 2:
-            >>> from graal_utils import Timer
-            >>> with Timer('python', time_color='MAGENTA'):
-            ...     print('Python')
-            ...
-        Execution of 'python' started on 2019-05-09 13h48m23s.
+            Execution completed in 0.00 seconds on 2019-05-09 13h48m23s.
 
-        Python
+            Example 2:
+                >>> from graal_utils import Timer
+                >>> with Timer('python', time_color='MAGENTA'):
+                ...     print('Python')
+                ...
+            Execution of 'python' started on 2019-05-09 13h48m23s.
 
-        Execution of 'python' completed in 0.00 seconds on 2019-05-09 13h48m23s.
+            Python
+
+            Execution of 'python' completed in 0.00 seconds on 2019-05-09 13h48m23s.
+
+        Examples as a decorator:
+            Example 1:
+                >>> from graal_utils import Timer
+                >>> @Timer
+                ... def foo():
+                ...     print('foo!')
+                ...
+                >>> foo()
+                Execution of 'foo' started on 2018-09-10 20h25m06s.
+
+                foo!
+
+                Execution of 'foo' completed in 0.00 seconds on 2018-09-10 20h25m06s.
+
+            Example 2:
+                >>> @Timer(datetime_format='%Hh%Mm%Ss', display_func_name=False, main_color='WHITE')
+                ... def bar():
+                ...     print('bar!')
+                ...     raise RuntimeError
+                ...
+                >>> try:
+                ...     bar()
+                ... except RuntimeError: pass
+                Execution started on 20h25m06s.
+
+                bar!
+
+                Execution terminated after 0.00 seconds on 20h25m06s.
+
+                >>> bar.elapsed_time
+                0.5172324180603027
+
+            Example 3:
+                >>> class Spam:
+                ...     @Timer
+                ...     def spam(self):
+                ...         print('egg!')
+
+                >>> Spam().spam()
+                Execution of 'spam' started on 2018-10-02 18h33m14s.
+
+                egg!
+
+                Execution of 'spam' completed in 0.00 seconds on 2018-10-02 18h33m14s.
+
+        Examples as an iterator:
+            Example 1: Simple case.
+                >>> for i in Timer(range(3)):
+                ...     time.sleep(.1)
+                ...     print(i)
+                Execution of 'range' started on 2021-04-23 15h09m30s.
+
+                0
+                1
+                2
+
+                Execution of 'range' completed in 0.33s on 2021-04-23 15h09m31s.
+                Mean time per iteration: 0.11s ± 0.00s over 3 iterations.
+                Iteration 0 was the shortest with 0.10s.
+                Iteration 1 was the longest with 0.11s.
+
+            Example 2: Case with the Timer objected yielded.
+                >>> for i, t in Timer(range(3), yield_timer=True):
+                ...     sleep(.1)
+                ... print(t.laps)
+                Execution of 'range' started on 2021-04-23 15h16m29s.
+
+
+                Execution of 'range' completed in 0.34s on 2021-04-23 15h16m29s.
+                Mean time per iteration: 0.11s ± 0.00s over 3 iterations.
+                Iteration 1 was the shortest with 0.11s.
+                Iteration 0 was the longest with 0.11s.
+
+                [0.11200141906738281, 0.11099791526794434, 0.11100339889526367]
         """
         if isinstance(func_or_name, str):
             func, display_name = None, func_or_name
@@ -239,61 +322,9 @@ class Timer:
                 )
 
 
+# Aliases for backward compatibility
 timer = Timer
-
-
-def timed(func=None, *, display_func_name=True, display_name=None, **Timer_kwargs):
-    """
-    Args:
-        func (function): Function or method to be wrapped.
-        display_func_name (bool): Whether the name of the function given by __name__ will be displayed.
-        display_name (str): Alternative name to display instead of func.__name__.
-    See Timer __init__ documentation for arguments and usage examples.
-
-    Example 1:
-        >>> from graal_utils import timed
-        >>> @timed
-        ... def foo():
-        ...     print('foo!')
-        ...
-        >>> foo()
-        Execution of 'foo' started on 2018-09-10 20h25m06s.
-
-        foo!
-
-        Execution of 'foo' completed in 0.00 seconds on 2018-09-10 20h25m06s.
-
-    Example 2:
-        >>> @timed(datetime_format='%Hh%Mm%Ss', display_func_name=False, main_color='WHITE')
-        ... def bar():
-        ...     print('bar!')
-        ...     raise RuntimeError
-        ...
-        >>> try:
-        ...     bar()
-        ... except RuntimeError: pass
-        Execution started on 20h25m06s.
-
-        bar!
-
-        Execution terminated after 0.00 seconds on 20h25m06s.
-
-    Example 3:
-        >>> class Spam:
-        ...     @timed
-        ...     def spam(self):
-        ...         print('egg!')
-
-        >>> Spam().spam()
-        Execution of 'spam' started on 2018-10-02 18h33m14s.
-
-        egg!
-
-        Execution of 'spam' completed in 0.00 seconds on 2018-10-02 18h33m14s.
-    """
-    if display_func_name == True and display_name is None:
-        display_name = ''
-    return Timer(func, display_name=display_name, **Timer_kwargs)
+timed = Timer
 
 
 if __name__ == '__main__':
@@ -306,7 +337,7 @@ if __name__ == '__main__':
 
     foo()
 
-    @timed(datetime_format='%Hh%Mm%Ss', display_func_name=False, main_color='WHITE')
+    @timed(datetime_format='%Hh%Mm%Ss', display_name=None, main_color='WHITE')
     def bar():
         sleep(.1)
         print('bar!')
@@ -345,7 +376,6 @@ if __name__ == '__main__':
 
     for i, t in Timer(range(3), yield_timer=True):
         sleep(.1)
-        print(i)
     print(t.laps)
 
 
