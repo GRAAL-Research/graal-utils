@@ -1,6 +1,8 @@
-import torch.nn as nn
-import torch.nn.init as init
-
+try:
+    import torch.nn as nn
+    import torch.nn.init as init
+except ImportError:
+    nn = None
 
 def weight_init(m):
     '''
@@ -15,6 +17,9 @@ def weight_init(m):
     .. [1] Ma, Xiaojian (2020/02). "A simple script for parameter initialization for PyTorch", GitHub Gist
         <https://gist.github.com/jeasinema/ed9236ce743c8efaf30fa2ff732749f5>`_
     '''
+    if nn is None:
+        raise ImportError("PyTorch does not seem installed.")
+
     if isinstance(m, nn.Conv1d):
         init.normal_(m.weight.data)
         if m.bias is not None:
