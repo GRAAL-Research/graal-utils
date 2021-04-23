@@ -39,7 +39,7 @@ class TestTimer:
             r'.\n',
             r'\n',
             r'\nExecution terminated after ',
-            r'\d.\d\ds',
+            r'\d.\d\ds' + ansicolor,
             r' on ',
             r'\d\d\d\d-\d\d-\d\d \d\dh\d\dm\d\ds' + ansicolor,
             r'.\n',
@@ -97,4 +97,38 @@ class TestTimer:
             r'\d\d\d\d-\d\d-\d\d \d\dh\d\dm\d\ds',
             r'.\n',
             r'\n']),
+                        captured.out)
+
+    def test_iterator_without_options_without_exception(self, capsys):
+
+        for i in Timer(range(2)):
+            sleep(i/10)
+            print(i)
+
+        captured = capsys.readouterr()
+
+        assert re.match(ansicolor + ansicolor.join([
+            r"Execution of '",
+            r'range',
+            r"' started on ",
+            r'\d\d\d\d-\d\d-\d\d \d\dh\d\dm\d\ds',
+            r'.\n',
+            r'\n0\n1\n',
+            r"\nExecution of '",
+            r'range',
+            r"' completed in ",
+            r'\d.\d\ds',
+            r' on ',
+            r'\d\d\d\d-\d\d-\d\d \d\dh\d\dm\d\ds',
+            r'.\n',
+            r'Mean time per iteration: ',
+            r'\d.\d\ds',
+            r' ± ',
+            r'\d.\d\ds',
+            r' over 2 iterations.\nIteration 0 was the shortest with ',
+            r'\d.\d\ds',
+            r'.\nIteration 1 was the longest with ',
+            r'\d.\d\ds',
+            r'.\n',
+            ]),
                         captured.out)

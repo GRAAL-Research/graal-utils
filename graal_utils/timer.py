@@ -1,8 +1,8 @@
-#!/usr/bin/env python
 """
 This module aims to provide tools to easily time snippets of codes with color coding.
 """
 
+import math
 from typing import Any
 from datetime import datetime as dt
 from time import time
@@ -34,7 +34,8 @@ class Timer:
                  exception_exit_color='LIGHTRED_EX',
                  name_color='LIGHTBLUE_EX',
                  time_color='LIGHTCYAN_EX',
-                 datetime_color='LIGHTMAGENTA_EX'):
+                 datetime_color='LIGHTMAGENTA_EX',
+                 yield_timer=False):
         """
         Args:
             func_or_name (Union[Callable, str, None]):
@@ -56,6 +57,8 @@ class Timer:
                 Color in which the time taken by the function will be displayed. Choices are those from the package colorama.
             datetime_color (str):
                 Color in which the date and time of day will be displayed. Choices are those from the package colorama.
+            yield_timer (bool):
+                Whether or not to yield the Timer object in addition to the output when Timer is used as an iterator.
 
         Supported colors:
             BLACK, WHITE, RED, BLUE, GREEN, CYAN, MAGENTA, YELLOW, LIGHTRED_EX, BLIGHTLUE_EX, GRLIGHTEEN_EX, CLIGHTYAN_EX, MAGELIGHTNTA_EX, YELLIGHTLOW_EX
@@ -99,6 +102,9 @@ class Timer:
         self.name_color = getattr(Fore, name_color)
         self.time_color = getattr(Fore, time_color)
         self.datetime_color = getattr(Fore, datetime_color)
+
+        self.yield_timer = yield_timer
+        self.iter_stats = ''
 
     def __enter__(self):
         self._start_timer()
@@ -165,7 +171,7 @@ class Timer:
 
         time_strings.append(format_time(seconds, 's'))
 
-        return self.time_color + " ".join(time_strings)
+        return self.time_color + " ".join(time_strings) + self.main_color
 
     def _start_timer(self):
         self.start_time = time()
@@ -175,20 +181,23 @@ class Timer:
         print(self.exception_exit_color +
               '\nExecution terminated after ' +
               self.format_elapsed_time(self.elapsed_time) +
-              f'{self.exception_exit_color} {self.datetime}{self.exception_exit_color}.\n' +
+              f'{self.exception_exit_color} {self.datetime}{self.exception_exit_color}.\n{self.iter_stats}' +
               Style.RESET_ALL)
 
     def _normal_exit_end_timer(self):
         print(self.main_color +
               f'\nExecution {self.func_name}completed in ' +
               self.format_elapsed_time(self.elapsed_time) +
-              f'{self.main_color} {self.datetime}.\n' +
+              f' {self.datetime}.\n{self.iter_stats}' +
               Style.RESET_ALL)
 
     def wrap_function(self, func):
         if func is not None:
             self.__doc__ = func.__doc__
-            self.__name__ = func.__name__
+            if hasattr(func, '__name__'):
+                self.__name__ = func.__name__
+            else:
+                self.__name__ = type(func).__name__ # For the case when Timer is used as an iterator.
 
         return func
 
@@ -205,6 +214,32 @@ class Timer:
         self.__wrapped_method = self._wrapped_func
         self._wrapped_func = lambda *args, **kwargs: self.__wrapped_method(parent_of_wrapped_method, *args, **kwargs)
         return self
+
+    def __iter__(self, *args, **kwargs):
+        with self:
+            self.laps = []
+            try:
+                for output in self._wrapped_func:
+                    start_time = time()
+                    yield (output, self) if self.yield_timer else output
+                    self.laps.append(time() - start_time)
+            finally:
+                self._update_iter_stats()
+
+    def _update_iter_stats(self):
+                mean_time = sum(self.laps)/len(self.laps)
+                std = math.sqrt(sum(t**2 for t in self.laps)/len(self.laps) - mean_time**2)
+                shortest_time = min((t, i) for i, t in enumerate(self.laps))
+                longest_time = max((t, i) for i, t in enumerate(self.laps))
+                self.iter_stats = (
+                    self.main_color
+                    + f'Mean time per iteration: {self.format_elapsed_time(mean_time)} ± {self.format_elapsed_time(std)} over {len(self.laps)} iterations.\n'
+                    + f'Iteration {shortest_time[1]} was the shortest with {self.format_elapsed_time(shortest_time[0])}.\n'
+                    + f'Iteration {longest_time[1]} was the longest with {self.format_elapsed_time(longest_time[0])}.\n'
+                )
+
+
+timer = Timer
 
 
 def timed(func=None, *, display_func_name=True, display_name=None, **Timer_kwargs):
@@ -282,6 +317,8 @@ if __name__ == '__main__':
     except RuntimeError:
         pass
 
+    print(bar.elapsed_time)
+
     class Spam:
         @timed
         def spam(self):
@@ -300,3 +337,22 @@ if __name__ == '__main__':
         print('Sleeping...')
         sleep(0.5)
     print(t.elapsed_time)
+
+
+    for i in Timer(range(3)):
+        sleep(.1)
+        print(i)
+
+    for i, t in Timer(range(3), yield_timer=True):
+        sleep(.1)
+        print(i)
+    print(t.laps)
+
+
+    try:
+        for i in Timer(range(2)):
+            print(i)
+            if i == 1:
+                raise RuntimeError
+    except RuntimeError:
+        pass
