@@ -3,6 +3,7 @@
 This module aims to provide tools to easily time snippets of codes with color coding.
 """
 
+from typing import Any
 from datetime import datetime as dt
 from time import time
 import functools
@@ -24,7 +25,9 @@ __date__ = 'May 28th, 2019'
 
 class Timer:
     def __init__(self,
-                 display_name=None,
+                 func=None,
+                 *,
+                 display_name='',
                  datetime_format='%Y-%m-%d %Hh%Mm%Ss',
                  elapsed_time_format='short',
                  main_color='LIGHTYELLOW_EX',
@@ -34,14 +37,25 @@ class Timer:
                  datetime_color='LIGHTMAGENTA_EX'):
         """
         Args:
-            display_name (str): String to be displayed to identify the timed snippet of code.
-            datetime_format (str or None, optional): Datetime format used to display the date and time. The format follows the template of the 'datetime' package. If None, no date or time will be displayed.
-            elapsed_time_format (either 'short' or 'long', optional): Format used to display the elapsed time. If 'long', whole words will be used. If 'short', only the first letters will be displayed.
-            main_color (str): Color in which the main text will be displayed. Choices are those from the package colorama.
-            exception_exit_color (str): Color in which the exception text will be displayed. Choices are those from the package colorama.
-            name_color (str): Color in which the function name will be displayed. Choices are those from the package colorama.
-            time_color (str): Color in which the time taken by the function will be displayed. Choices are those from the package colorama.
-            datetime_color (str): Color in which the date and time of day will be displayed. Choices are those from the package colorama.
+            func (Union[Callable, None]):
+                The callable which will be timed every time it is called. Defaults to None in case no callable needs to be timed, or callable will be set on the next call to Timer.
+            display_name (Union[str, None]):
+                String to be displayed to identify the timed snippet of code.
+                Defaults will display nothing if used as a context manager and will display the name of the function if used as a decorator. If set to None, will display nothing in both cases.
+            datetime_format (str or None, optional):
+                Datetime format used to display the date and time. The format follows the template of the 'datetime' package. If None, no date or time will be displayed.
+            elapsed_time_format (either 'short' or 'long', optional):
+                Format used to display the elapsed time. If 'long', whole words will be used. If 'short', only the first letters will be displayed.
+            main_color (str):
+                Color in which the main text will be displayed. Choices are those from the package colorama.
+            exception_exit_color (str):
+                Color in which the exception text will be displayed. Choices are those from the package colorama.
+            name_color (str):
+                Color in which the function name will be displayed. Choices are those from the package colorama.
+            time_color (str):
+                Color in which the time taken by the function will be displayed. Choices are those from the package colorama.
+            datetime_color (str):
+                Color in which the date and time of day will be displayed. Choices are those from the package colorama.
 
         Supported colors:
             BLACK, WHITE, RED, BLUE, GREEN, CYAN, MAGENTA, YELLOW, LIGHTRED_EX, BLIGHTLUE_EX, GRLIGHTEEN_EX, CLIGHTYAN_EX, MAGELIGHTNTA_EX, YELLIGHTLOW_EX
@@ -68,6 +82,7 @@ class Timer:
 
         Execution of 'python' completed in 0.00 seconds on 2019-05-09 13h48m23s.
         """
+        self._wrapped_func = self.wrap_function(func)
         self.display_name = display_name
         self.start_time = None
         self.elapsed_time = None
@@ -93,8 +108,10 @@ class Timer:
 
     @property
     def func_name(self):
-        if self.display_name:  #self.func.__name__ != 'main':
+        if self.display_name:
             return f"of '{self.name_color}{self.display_name}{self.main_color}' "
+        elif self.display_name == '' and self.func is not None:
+            return f"of '{self.name_color}{self.func.__name__}{self.main_color}' "
         else:
             return ''
 
@@ -162,6 +179,20 @@ class Timer:
               self.format_elapsed_time(self.elapsed_time) +
               f'{self.main_color} {self.datetime}.\n' +
               Style.RESET_ALL)
+
+    def wrap_function(self, func):
+        if func is not None:
+            self.__doc__ = func.__doc__
+            self.__name__ = func.__name__
+
+        return func
+
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        if self._wrapped_func is None:
+            self._wrapped_func = self.wrap_function(args[0])
+        else:
+            with self:
+                return self._wrapped_func(*args, **kwargs)
 
 
 def timed(func=None, *, display_func_name=True, display_name=None, **Timer_kwargs):
