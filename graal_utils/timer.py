@@ -25,7 +25,7 @@ __date__ = 'May 28th, 2019'
 
 class Timer:
     def __init__(self,
-                 func=None,
+                 func_or_name=None,
                  *,
                  display_name='',
                  datetime_format='%Y-%m-%d %Hh%Mm%Ss',
@@ -37,11 +37,11 @@ class Timer:
                  datetime_color='LIGHTMAGENTA_EX'):
         """
         Args:
-            func (Union[Callable, None]):
-                The callable which will be timed every time it is called. Defaults to None in case no callable needs to be timed, or callable will be set on the next call to Timer.
+            func_or_name (Union[Callable, str, None]):
+                If Timer is used as a decorator: If a callable, the callable will be wrapped and timed every time it is called. If None, the callable will be set on the next call to Timer.
+                If Timer is used as a context manager: If a string, the string will be used as display name. If None, no name will be displayed.
             display_name (Union[str, None]):
-                String to be displayed to identify the timed snippet of code.
-                Defaults will display nothing if used as a context manager and will display the name of the function if used as a decorator. If set to None, will display nothing in both cases.
+                String to be displayed to identify the timed snippet of code. Default (an empty string) will display the name of the function. If set to None, will display nothing instead. Only useful if Timer is used as a decorator, since the first arguments is used in the case of a context manager.
             datetime_format (str or None, optional):
                 Datetime format used to display the date and time. The format follows the template of the 'datetime' package. If None, no date or time will be displayed.
             elapsed_time_format (either 'short' or 'long', optional):
@@ -82,6 +82,11 @@ class Timer:
 
         Execution of 'python' completed in 0.00 seconds on 2019-05-09 13h48m23s.
         """
+        if isinstance(func_or_name, str):
+            func, display_name = None, func_or_name
+        else:
+            func = func_or_name
+
         self._wrapped_func = self.wrap_function(func)
         self.display_name = display_name
         self.start_time = None
@@ -110,8 +115,8 @@ class Timer:
     def func_name(self):
         if self.display_name:
             return f"of '{self.name_color}{self.display_name}{self.main_color}' "
-        elif self.display_name == '' and self.func is not None:
-            return f"of '{self.name_color}{self.func.__name__}{self.main_color}' "
+        elif self.display_name == '' and self._wrapped_func is not None:
+            return f"of '{self.name_color}{self.__name__}{self.main_color}' "
         else:
             return ''
 
@@ -187,12 +192,19 @@ class Timer:
 
         return func
 
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         if self._wrapped_func is None:
             self._wrapped_func = self.wrap_function(args[0])
+            return self
         else:
             with self:
                 return self._wrapped_func(*args, **kwargs)
+
+    def __get__(self, parent_of_wrapped_method, type_of_parent_of_wrapped_method=None):
+        # Gets called only for wrapped methods. Sets the first argument of the function as the correct instance of 'self'.
+        self.__wrapped_method = self._wrapped_func
+        self._wrapped_func = lambda *args, **kwargs: self.__wrapped_method(parent_of_wrapped_method, *args, **kwargs)
+        return self
 
 
 def timed(func=None, *, display_func_name=True, display_name=None, **Timer_kwargs):
@@ -244,22 +256,9 @@ def timed(func=None, *, display_func_name=True, display_name=None, **Timer_kwarg
 
         Execution of 'spam' completed in 0.00 seconds on 2018-10-02 18h33m14s.
     """
-    if func is None:
-
-        def missing_func_timed(new_func):
-            return timed(new_func, **Timer_kwargs)
-
-        return missing_func_timed
-
-    if (not display_name and display_func_name):
-        display_name = func.__name__
-
-    @functools.wraps(func)
-    def timed_func(*args, **kwargs):  # args[0] is the reference to 'self' if 'func' is a method.
-        with Timer(display_name, **Timer_kwargs):
-            return func(*args, **kwargs)
-
-    return timed_func
+    if display_func_name == True and display_name is None:
+        display_name = ''
+    return Timer(func, display_name=display_name, **Timer_kwargs)
 
 
 if __name__ == '__main__':
@@ -297,7 +296,7 @@ if __name__ == '__main__':
     with Timer('python', time_color='MAGENTA'):
         print('Python')
 
-    with Timer('python', elapsed_time_format='long', time_color='CYAN') as t:
-        print("sleep 1.5 seconds")
-        sleep(1.5)
+    with Timer('sleep 0.5 seconds', elapsed_time_format='long', time_color='CYAN') as t:
+        print('Sleeping...')
+        sleep(0.5)
     print(t.elapsed_time)
