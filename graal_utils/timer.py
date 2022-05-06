@@ -3,18 +3,20 @@ This module aims to provide tools to easily time snippets of codes with color co
 """
 
 import math
-from typing import Any
 from datetime import datetime as dt
 from time import time
-import functools
+from typing import Any
+
 try:
     from colorama import Fore, Style, init
+
     init()
 except ModuleNotFoundError:
     # Emulate the Fore and Style class of colorama with a class that as an empty string for every attributes.
     class EmptyStringAttrClass:
         def __getattr__(self, attr):
             return ''
+
 
     Fore = EmptyStringAttrClass()
     Style = EmptyStringAttrClass()
@@ -29,6 +31,7 @@ class Timer:
 
     The class can be used as a context manager to time the code inside the 'with' statement, as a decorator of a function or a method to time it at each call, or as an iterator to have the total running time of a for loop as well as the mean time taken per iteration. See the doc of the init method for usage examples.
     """
+
     def __init__(self,
                  func_or_name=None,
                  *,
@@ -280,7 +283,7 @@ class Timer:
             if hasattr(func, '__name__'):
                 self.__name__ = func.__name__
             else:
-                self.__name__ = type(func).__name__ # For the case when Timer is used as an iterator.
+                self.__name__ = type(func).__name__  # For the case when Timer is used as an iterator.
 
         return func
 
@@ -310,38 +313,41 @@ class Timer:
                 self._update_iter_stats()
 
     def _update_iter_stats(self):
-                mean_time = sum(self.laps)/len(self.laps)
-                std = math.sqrt(sum(t**2 for t in self.laps)/len(self.laps) - mean_time**2)
-                shortest_time = min((t, i) for i, t in enumerate(self.laps))
-                longest_time = max((t, i) for i, t in enumerate(self.laps))
-                self.iter_stats = (
-                    self.main_color
-                    + f'Mean time per iteration: {self.format_elapsed_time(mean_time)} ± {self.format_elapsed_time(std)} over {len(self.laps)} iterations.\n'
-                    + f'Iteration {shortest_time[1]} was the shortest with {self.format_elapsed_time(shortest_time[0])}.\n'
-                    + f'Iteration {longest_time[1]} was the longest with {self.format_elapsed_time(longest_time[0])}.\n'
-                )
+        mean_time = sum(self.laps) / len(self.laps)
+        std = math.sqrt(sum(t ** 2 for t in self.laps) / len(self.laps) - mean_time ** 2)
+        shortest_time = min((t, i) for i, t in enumerate(self.laps))
+        longest_time = max((t, i) for i, t in enumerate(self.laps))
+        self.iter_stats = (
+                self.main_color
+                + f'Mean time per iteration: {self.format_elapsed_time(mean_time)} ± {self.format_elapsed_time(std)} over {len(self.laps)} iterations.\n'
+                + f'Iteration {shortest_time[1]} was the shortest with {self.format_elapsed_time(shortest_time[0])}.\n'
+                + f'Iteration {longest_time[1]} was the longest with {self.format_elapsed_time(longest_time[0])}.\n'
+        )
 
 
 # Aliases for backward compatibility
 timer = Timer
 timed = Timer
 
-
 if __name__ == '__main__':
     from time import sleep
+
 
     @timed
     def foo():
         sleep(.1)
         print('foo!')
 
+
     foo()
+
 
     @timed(datetime_format='%Hh%Mm%Ss', display_name=None, main_color='WHITE')
     def bar():
         sleep(.1)
         print('bar!')
         raise RuntimeError
+
 
     try:
         bar()
@@ -350,11 +356,13 @@ if __name__ == '__main__':
 
     print(bar.elapsed_time)
 
+
     class Spam:
         @timed
         def spam(self):
             sleep(.1)
             print('egg!')
+
 
     Spam().spam()
 
@@ -369,7 +377,6 @@ if __name__ == '__main__':
         sleep(0.5)
     print(t.elapsed_time)
 
-
     for i in Timer(range(3)):
         sleep(.1)
         print(i)
@@ -377,7 +384,6 @@ if __name__ == '__main__':
     for i, t in Timer(range(3), yield_timer=True):
         sleep(.1)
     print(t.laps)
-
 
     try:
         for i in Timer(range(2)):
